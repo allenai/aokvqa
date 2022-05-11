@@ -1,0 +1,4 @@
+[submodule "ClipCap"]
+	path = ClipCap
+	url = git@github.com:allenai/aokvqa.git
+	branch = ClipCap
