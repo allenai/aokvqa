@@ -44,7 +44,7 @@ aokvqa_set = load_aokvqa(args.aokvqa_dir, args.split)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 if args.checkpoint_path is not None:
-    classifier = LinearClassifier.load_from_checkpoint(args.checkpoint_path, clip_model_type='ViT-B/32')  ## TODO
+    classifier = LinearClassifier.load_from_checkpoint(args.checkpoint_path)
     classifier.to(device)
     hp = classifier.hparams
 elif args.clip_zero_shot:
@@ -108,6 +108,6 @@ with torch.no_grad():
 
 # Map prediction to nearest neighbor choice (by word embeddings)
 if args.multiple_choice and hp.objective == 'classifier':
-    predictions = map_to_choices(dataset, predictions)
+    predictions = map_to_choices(aokvqa_set, predictions)
 
 json.dump(predictions, args.output_file)

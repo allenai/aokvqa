@@ -28,7 +28,7 @@ dataset = load_aokvqa(args.aokvqa_dir, args.split)
 ## Load model
 
 resnet_preprocess = T.Compose([
-    T.Resize(size=224, interpolation=Image.BICUBIC),
+    T.Resize(size=224, interpolation=T.InterpolationMode.BICUBIC),
     T.CenterCrop(size=(224, 224)),
     T.ToTensor(),
     T.Normalize(
