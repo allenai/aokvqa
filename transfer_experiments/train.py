@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-import pytorch_lightning as pl
+
+# https://github.com/PyTorchLightning/pytorch-lightning/issues/11663
+import sentencepiece; import pytorch_lightning as pl
+
 import torchmetrics.functional as MF
 
 from aokvqa_utils import load_aokvqa

@@ -18,7 +18,6 @@ export PYTHONPATH=.
 
 conda env create --name aokvqa
 conda activate aokvqa
-pip uninstall sentencepiece  # Conflicts with pytorch-lightning
 ```
 
 ### Downloading the dataset

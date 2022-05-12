@@ -7,8 +7,10 @@ import json
 
 import torch
 import torch.nn as nn
-from pytorch_lightning.utilities import AttributeDict
 import clip
+
+# https://github.com/PyTorchLightning/pytorch-lightning/issues/11663
+import sentencepiece; from pytorch_lightning.utilities import AttributeDict
 
 from transfer_experiments.train import LinearClassifier
 from aokvqa_utils import load_aokvqa, map_to_choices
