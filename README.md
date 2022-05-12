@@ -1,12 +1,33 @@
 # A-OKVQA
 
-Official repository for [A-OKVQA: A Benchmark for Visual Question Answering using World Knowledge]()
+Official repository for **A-OKVQA: A Benchmark for Visual Question Answering using World Knowledge**.
+
+Links: [[Paper]]() [[Website]](https://aokvqa.allenai.org) [[Leaderboard]](https://leaderboard.allenai.org/aokvqa)
 
 ### Abstract
 
 The Visual Question Answering (VQA) task aspires to provide a meaningful testbed for the development of AI models that can jointly reason over visual and natural language inputs. Despite a proliferation of VQA datasets, this goal is hindered by a set of common limitations. These include a reliance on relatively simplistic questions that are repetitive in both concepts and linguistic structure, little world knowledge needed outside of the paired image, and limited reasoning required to arrive at the correct answer. We introduce A-OKVQA, a crowdsourced dataset composed of a diverse set of about 25K questions requiring a broad base of commonsense and world knowledge to answer. In contrast to the existing knowledge-based VQA datasets, the questions generally cannot be answered by simply querying a knowledge base, and instead require some form of commonsense reasoning about the scene depicted in the image.  We demonstrate the potential of this new dataset through a detailed analysis of its contents and baseline performance measurements over a variety of state-of-the-art vision–language models.
 
 ![A-OKVQA Figure 1](./readme_files/teaser.png)
+
+<hr>
+
+#### Table of Contents
+
+- [Getting started](#getting-started)
+  * [Downloading the dataset](#downloading-the-dataset)
+- [Evaluation](#evaluation)
+  * [Leaderboard](#leaderboard)
+- [Codebase](#codebase)
+  * [Preparing data](#preparing-data)
+  * [Models and Predictions](#models-and-predictions)
+    + [Heuristics](#heuristics)
+    + [Transfer Learning Experiments](#transfer-learning-experiments)
+    + [Querying GPT-3](#querying-gpt-3)
+    + [ClipCap](#clipcap)
+    + [Generating Captions & Rationales](#generating-captions--rationales)
+
+<hr>
 
 ## Getting started
 
@@ -30,7 +51,7 @@ curl https://prior-datasets.s3.us-east-2.amazonaws.com/aokvqa/aokvqa_v1p0.zip
 unzip aokvqa_v1p0.zip -d ${AOKVQA_DIR}; rm aokvqa_v1p0.zip
 ```
 
-You'll also want to download the following images and annotations for COCO 2017:
+<details> <summary><b>Downloading images/annotations from COCO 2017</b></summary>
 
 ```bash
 export COCO_DIR=./datasets/coco/
@@ -45,6 +66,8 @@ wget http://images.cocodataset.org/annotations/annotations_trainval2017.zip
 unzip annotations_trainval2017.zip -d ${COCO_DIR}; rm annotations_trainval2017.zip
 ```
 
+</details>
+
 Loading our dataset is easy! Just grab our [aokvqa_utils.py](https://github.com/allenai/aokvqa/blob/main/aokvqa_utils.py) file and refer to the following code.
 
 ```python
@@ -54,7 +77,11 @@ import aokvqa_utils
 aokvqa_dir = os.getenv('AOKVQA_DIR')
 
 train_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'train')
+val_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'val')
+test_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'test')
 ```
+
+<details> <summary><b>Example dataset entry</b></summary>
 
 ```python
 dataset_example = train_dataset[0]
@@ -79,32 +106,34 @@ print(dataset_example['rationales'][0])
 # A train would not be on the street, he would not have luggage waiting for a delivery, and the skateboarder is there and not paying attention to him so a cab is the only possible answer.
 ```
 
+</details>
+
 ## Evaluation
 
-Please prepare a `predictions.json` file for each evaluation split with the format: `{ question_id (str) : prediction (str) }`. Be sure that this file is complete (i.e. includes a prediction for every question in the evaluation set).
+Please prepare a `predictions.json` file for each evaluation split (val and test, for both MC and DA) with the format: `{ question_id (str) : prediction (str) }`. Be sure this includes a prediction for **every** question in the evaluation set. You won't be able to run evaluation locally on test set predictions, since the ground-truth answers are hidden.
 
 ```python
 import os
 import json
 import aokvqa_utils
 
-aokvqa_dir = os.getenv('AOKVQA_DIR')
-split = 'val'
-multiple_choice = False
+multiple_choice = True  # Set False for DA
 predictions_file = './path/to/predictions.json'
-
-eval_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, split)
 predictions = json.load(open(predictions_file, 'r'))
 
+aokvqa_dir = os.getenv('AOKVQA_DIR')
+split = 'val'
+eval_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, split)
+
 acc = aokvqa_utils.eval_aokvqa(eval_dataset, predictions, multiple_choice=multiple_choice)
-print(acc)
+print(acc) # float
 ```
 
 To compute metrics over a batch of predictions files (e.g. `./predictions/{model-name}_val-da.json`), you can instead run `python evaluate_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --preds "./predictions/*_val-da.json"`. Add the `--multiple-choice` flag to run MC evaluation over (e.g. `*_val-mc.json`) files that have instead been generated for the multiple-choice setting.
 
 ### Leaderboard
 
-You can submit predictions from your model to our leaderboard! Simply produce predictions files for each of the settings (Val DA, Val MC, Test DA, Test MC) and submit here. Remember that you aren't allowed to give choices to your model when predicting direct answers.
+You can submit predictions from your model to our leaderboard! Simply produce predictions files for each split and setting and [submit here](https://leaderboard.allenai.org/aokvqa). Remember that your model is not allowed to compare "choices" when predicting for the DA setting.
 
 ## Codebase
 
@@ -127,14 +156,29 @@ for split in train val test; do
 done
 ```
 
+<details> <summary><b>For training ClipCap with a transformer mapping network</b></summary>
+
 If you want to train our ClipCap models with the transformer mapping network (instead of an MLP, like we do), you'll also need to run `extract_clip_features.py` with `--model-type RN50x4`.
 
-Our ResNet and BERT classification experiments require these respective features instead of CLIP. To generate these, please run the following commands for each `${split}`:
-```bash
-python data_scripts/extract_resnet_features.py --aokvqa-dir ${AOKVQA_DIR} --coco-dir ${COCO_DIR} --split ${split} --out ${FEATURES_DIR}/resnet_${split}.pt
+</details>
 
-python data_scripts/extract_bert_features.py --aokvqa-dir ${AOKVQA_DIR} --split ${split} --out ${FEATURES_DIR}/bert_${split}.pt
+<details> <summary><b>For ResNet and BERT input features</b></summary>
+
+Our ResNet and BERT classification experiments require these respective features instead of CLIP. To generate these, please run the following commands:
+
+```bash
+# ResNet
+for split in train val test; do
+    python data_scripts/extract_resnet_features.py --aokvqa-dir ${AOKVQA_DIR} --coco-dir ${COCO_DIR} --split ${split} --out ${FEATURES_DIR}/resnet_${split}.pt
+done
+
+# BERT
+for split in train val test; do
+    python data_scripts/extract_bert_features.py --aokvqa-dir ${AOKVQA_DIR} --split ${split} --out ${FEATURES_DIR}/bert_${split}.pt
+done
 ```
+
+</details>
 
 ### Models and Predictions
 
@@ -144,25 +188,28 @@ export PREDS_DIR=./predictions/
 mkdir -p ${LOG_DIR} ${PREDS_DIR}
 ```
 
+Below, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples, we produce predictions on the validation set below.
+
 #### Heuristics
 
-Simply run [random_unweighted.py](https://github.com/allenai/aokvqa/blob/main/heuristics/random_unweighted.py), [random_weighted.py](https://github.com/allenai/aokvqa/blob/main/heuristics/random_weighted.py), or [most_common_answer.py](https://github.com/allenai/aokvqa/blob/main/heuristics/most_common_answer.py) with the following example command.
-
 ```bash
-python heuristics/random_unweighted.py --aokvqa-dir ${AOKVQA_DIR} --split val --out predictions/random-unweighted_val-da.json
-```
+# These scripts accept the same arguments.
+# heuristics/random_unweighted.py
+# heuristics/random_weighted.py
+# heuristics/most_common_answer.py
 
-You can add the `--mc` flag to generate predictions for the multiple choice setting (also for `--out ..._val-mc.json`).
+python heuristics/random_unweighted.py --aokvqa-dir ${AOKVQA_DIR} --split val --mc --out ${PREDS_DIR}/random-unweighted_val-mc.json
+# Exclude --mc for the direct answer setting
+```
 
 #### Transfer Learning Experiments
 
 We use the following training/prediction scripts for the classifier, zero-shot, and contrastive experiments in Table 3.
 
 ```bash
-## Training: build your own command
+## Training
 python transfer_experiments/train.py --aokvqa-dir ${AOKVQA_DIR} --vocab ${AOKVQA_DIR}/large_vocab_train.csv --log-dir ${LOG_DIR}
 
-# Backbone
 --backbone clip --clip-model-type ViT-B/32 --train-features ${FEATURES_DIR}/clip-ViT-B-32_train.pt --val-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt
 --inputs question # OR --inputs image  # OR --inputs question image
 # OR
@@ -170,70 +217,32 @@ python transfer_experiments/train.py --aokvqa-dir ${AOKVQA_DIR} --vocab ${AOKVQA
 # OR
 --backbone bert --train-features ${FEATURES_DIR}/bert_train.pt --val-features ${FEATURES_DIR}/bert_val.pt --inputs question
 
-# Objective
 --objective classifier
 # OR
 --objective contrastive --vocab-features ${FEATURE_DIR}/clip-ViT-B-32_large_vocab.pt
 ```
 
+You can make predictions for CLIP zero-shot or from a classifier/contrastive checkpoint trained above.
+
 ```bash
-## Predictions
-python transfer_experiments/predict.py --aokvqa-dir ${AOKVQA_DIR}
+## Predicting
+python transfer_experiments/predict.py --aokvqa-dir ${AOKVQA_DIR} --out ${PREDS_DIR}/clip-classifier_val-mc.json
 
-# Split
---split val # or test
-# Adjust according to backbone and split:
---features ${FEATURE_DIR}/clip-ViT-B-32_val.pt
+--split val  # or test
+--features ${FEATURE_DIR}/clip-ViT-B-32_val.pt  # adjust for backbone and eval split
 
-# Model
 --ckpt path/to/model.ckpt
 # OR
 --zero-shot --clip-model-type ViT-B/32
 --inputs question  # OR --inputs image  # OR --inputs question image
 
-# For multiple choice mode add: --mc
+--mc  # Multiple-choice. Exclude for direct-answer.
 
-parser.add_argument('--vocab', type=argparse.FileType('r'))
-parser.add_argument('--vocab-features', type=pathlib.Path, dest='vocab_features')
-#
+# IF classifier OR direct-answer
+--vocab ${AOKVQA_DIR}/large_vocab_train.csv
+# IF contrastive/zero-shot AND direct-answer
+--vocab-features ${FEATURES_DIR}/clip-ViT-B-32_large_vocab.pt
 ```
-
-#### ClipCap
-
-We have modified the [ClipCap](https://github.com/rmokady/CLIP_prefix_caption) codebase for our task of VQA. In particular, we have forked the original repo via [our ClipCap branch](https://github.com/allenai/aokvqa/tree/ClipCap) and [made additional changes](https://github.com/allenai/aokvqa/compare/1ad805a...ClipCap).
-
-Be sure that you cloned this repo with the command above: i.e. with `--recurse-submodules`.
-Also, you'll need to grab the pretrained model (ClipCap with MLP mapping network and finetuned GPT-2, trained on COCO):
-```bash
-export PT_MODEL_DIR=./pretrained_models/
-mkdir -p ${PT_MODEL_DIR}
-
-gdown 1IdaBtMSvtyzF0ByVaBHtvM0JYSXRExRX -O ${PT_MODEL_DIR}/clipcap_coco_weights.pt
-```
-
-Then, you can finetune and predict on our dataset with:
-
-```bash
-python ClipCap/train.py --log-dir ${LOG_DIR}/clipcap --aokvqa-dir ${AOKVQA_DIR} --train-features ${FEATURES_DIR}/clip-ViT-B-32_train.pt --val-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt --pretrained-model ${PT_MODEL_DIR}/clipcap_coco_weights.pt --generation-target answer --mapping mlp --finetune-gpt
-```
-
-We add `--prompt-with-choices` for training a model in the multiple-choice setting.
-
-```bash
-python ClipCap predict.py --log-dir ${LOG_DIR}/clipcap --epoch 9 --aokvqa-dir ${AOKVQA_DIR} --split val --eval-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt --out ${PREDS_DIR}/clipcap_val-da.json
-```
-
-Please add the `--map-to-choices` flag and `--out ...-mc.json` for producing predictions in the multiple-choice setting.
-
-If you would like to instead train the transformer mapping network, grab that pretrained model with `gdown 1GYPToCqFREwi285wPLhuVExlz7DDUDfJ -O clipcap_transformer_weights.pt` (replacing `--pretrained-model` appropriately) and set `--mapping transformer`.
-
-#### Generating Rationales
-
-To generate rationales, we repeat the above ClipCap training and predictions, with some modifications.
-
-For training, we instead pass `--generation-target rationale` and always exclude `--prompt-with-choices`. We only train one model between the DA and MC settings.
-
-For prediction, we add the `--beam-search` flag and output to `--out ${LOG_DIR}/gpt3-inputs/clipcap-rationales_val.json`.
 
 #### Querying GPT-3
 
@@ -244,12 +253,125 @@ export OPENAI_ORG=....
 export OPENAI_API_KEY=...
 ```
 
-Create ground-truth rationale files.
-
-Then you can simply run:
+For producing predictions for both DA and MC settings, run:
 ```bash
 python gpt3/query_gpt3.py --aokvqa-dir ${AOKVQA_DIR} --split val --out ${PREDS_DIR}/gpt3_val-da.json
 python remap_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --pred ${PREDS_DIR}/gpt3_val-da.json --out ${PREDS_DIR}/gpt3_val-mc.json
 ```
 
-You can also prompt GPT-3 with "Context: ..." by providing files with `{ question_id (str) : context (str) }` for the training and evaluation splits. For example, we can prompt with ground-truth train and ClipCap generated val rationales with `--train-context ${LOG_DIR}/gpt3-inputs/rationales_train.json --context ${LOG_DIR}/gpt3-inputs/clipcap-rationales_val.json`.
+#### ClipCap
+
+We have modified the [ClipCap](https://github.com/rmokady/CLIP_prefix_caption) codebase for our task of VQA. In particular, we have forked the original repo via [our ClipCap branch](https://github.com/allenai/aokvqa/tree/ClipCap) and [made additional changes](https://github.com/allenai/aokvqa/compare/1ad805a...ClipCap). This is already part of the codebase you cloned, assuming you included `--recurse-submodules` as directed above.
+
+<details> <summary><b>Downloading pretrained models</b></summary>
+
+```bash
+export PT_MODEL_DIR=./pretrained_models/
+mkdir -p ${PT_MODEL_DIR}
+
+# We use this model: MLP mapping network and finetuned GPT-2 (pretrained on COCO)
+gdown 1IdaBtMSvtyzF0ByVaBHtvM0JYSXRExRX -O ${PT_MODEL_DIR}/clipcap_coco_weights.pt
+```
+
+</details>
+
+```bash
+# Finetuning on our dataset
+python ClipCap/train.py --log-dir ${LOG_DIR}/clipcap --aokvqa-dir ${AOKVQA_DIR} --train-features ${FEATURES_DIR}/clip-ViT-B-32_train.pt --val-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt --pretrained-model ${PT_MODEL_DIR}/clipcap_coco_weights.pt --generation-target answer --mapping mlp --finetune-gpt
+
+# Predicting (e.g. for epoch 3)
+python ClipCap/predict.py --log-dir ${LOG_DIR}/clipcap --epoch 3 --aokvqa-dir ${AOKVQA_DIR} --split val --eval-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt --out ${PREDS_DIR}/clipcap_val-da.json
+```
+
+For the multiple-choice setting, adjust the following arguments:
+```bash
+# ClipCap/train.py: --log-dir ${LOG_DIR}/clipcap-mc --prompt-with-choices
+# ClipCap/predict.py: --log-dir ${LOG_DIR}/clipcap-mc --map-to-choices --out ${PREDS_DIR}/clipcap_val-mc.json
+```
+
+<details> <summary><b>For training with a Transformer mapping network</b></summary>
+
+```bash
+# Grab the Transformer ClipCap weights (pretrained on COCO)
+gdown 1GYPToCqFREwi285wPLhuVExlz7DDUDfJ -O ${PT_MODEL_DIR}/clipcap_transformer_weights.pt
+
+# ClipCap/train.py: --train-features ${FEATURES_DIR}/clip-RN50x4_train.pt --pretrained-model ${PT_MODEL_DIR}/clipcap_transformer_weights.pt --mapping transformer
+# ClipCap/predict.py: --eval-features ${FEATURES_DIR}/clip-RN50x4_val.pt
+```
+
+</details>
+
+#### Generating Captions & Rationales
+
+To generate rationales, we repeat the [above](#clipcap) ClipCap training and predictions, with some modifications. We only train one model (even between DA and MC settings).
+
+```bash
+mkdir -p ${LOG_DIR}/gpt3-inputs
+
+# ClipCap/train.py: --log-dir ${LOG_DIR}/clipcap-rationale --generation-target rationale
+# Be sure to exclude --prompt-with-choices
+
+# ClipCap/predict.py: --log-dir ${LOG_DIR}/clipcap-rationale --beam-search --out ${LOG_DIR}/gpt3-inputs/clipcap-rationales_val.json
+# Be sure to exclude --map-to-choices
+```
+
+<details> <summary><b>Prompting GPT-3 with rationales</b></summary>
+
+First see [Querying GPT-3](#querying-gpt-3) section above.
+
+We should generate ground-truth rationale files:
+```bash
+for split in train val; do
+    python gpt3/rationale_inputs.py --aokvqa-dir ${AOKVQA_DIR} --split ${split} --out logs/gpt3-inputs/rationales_${split}.json
+done
+```
+
+You can prompt GPT-3 as described above, but with the following modified arguments:
+
+```bash
+# For prompting with ground-truth rationales:
+
+# gpt3/query_gpt3.py: --train-context ${LOG_DIR}/gpt3-inputs/rationales_train.json --context ${LOG_DIR}/gpt3-inputs/rationales_val.json --out ${PREDS_DIR}/gpt3-rationales_val-da.json
+# remap_predictions.py: --pred ${PREDS_DIR}/gpt3-rationales_val-da.json --out ${PREDS_DIR}/gpt3-rationales_val-mc.json
+
+# For prompting with generated rationales:
+
+# gpt3/query_gpt3.py: --train-context ${LOG_DIR}/gpt3-inputs/rationales_train.json --context ${LOG_DIR}/gpt3-inputs/clipcap-rationales_val.json --out ${PREDS_DIR}/gpt3-clipcap-rationales_val-da.json
+# remap_predictions.py: --pred ${PREDS_DIR}/gpt3-clipcap-rationales_val-da.json --out ${PREDS_DIR}/gpt3-clipcap-rationales_val-mc.json
+```
+
+</details>
+
+<details> <summary><b>Generating and prompting with captions</b></summary>
+
+Please read everything else (above) in this section first.
+
+We can generate COCO captions with the original ClipCap weights.
+
+```bash
+python ClipCap/predict_clipcap.py --ckpt ${PT_MODEL_DIR}/clipcap_coco_weights.pt --mapping mlp --aokvqa-dir ${AOKVQA_DIR} --split val --eval-features ${FEATURES_DIR}/clip-ViT-B-32_val.pt --beam-search --out logs/gpt3-inputs/clipcap-captions_val.json
+```
+
+We should also generate ground-truth captions (for train and val).
+
+```bash
+for split in train val; do
+    python gpt3/caption_inputs.py --aokvqa-dir ${AOKVQA_DIR} --coco-dir ${COCO_DIR} --split ${split} --out ${LOG_DIR}/gpt3-inputs/captions_${split}.json
+done
+```
+
+Query GPT-3 with original arguments and the following modifications, and produce predictions.
+
+```bash
+# For prompting with ground-truth captions:
+
+# gpt3/query_gpt3.py: --train-context ${LOG_DIR}/gpt3-inputs/captions_train.json --context ${LOG_DIR}/gpt3-inputs/captions_val.json --out ${PREDS_DIR}/gpt3-captions_val-da.json
+# remap_predictions.py: --pred ${PREDS_DIR}/gpt3-captions_val-da.json --out ${PREDS_DIR}/gpt3-captions_val-mc.json
+
+# For prompting with generated captions:
+
+# gpt3/query_gpt3.py: --train-context ${LOG_DIR}/gpt3-inputs/captions_train.json --context ${LOG_DIR}/gpt3-inputs/clipcap-captions_val.json --out ${PREDS_DIR}/gpt3-clipcap-captions_val-da.json
+# remap_predictions.py: --pred ${PREDS_DIR}/gpt3-clipcap-captions_val-da.json --out ${PREDS_DIR}/gpt3-clipcap-captions_val-mc.json
+```
+
+</details>
