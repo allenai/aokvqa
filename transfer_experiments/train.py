@@ -18,17 +18,19 @@ from aokvqa_utils import load_aokvqa
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--aokvqa-dir', type=pathlib.Path, required=True, dest='aokvqa_dir')
-    parser.add_argument('--train-features', type=pathlib.Path, required=True, dest='train_features')
-    parser.add_argument('--val-features', type=pathlib.Path, required=True, dest='val_features')
-    parser.add_argument('--objective', type=str, choices=['classifier', 'contrastive'], required=True)
+    parser.add_argument('--vocab', type=argparse.FileType('r'), required=True)
+    parser.add_argument('--log-dir', type=pathlib.Path, dest='log_dir', required=True)
+    #
     parser.add_argument('--backbone', type=str, choices=['clip', 'resnet', 'bert'], required=True)
     parser.add_argument('--clip-model-type', type=str,
                         choices=['RN50', 'RN50x4', 'RN50x16', 'RN50x64', 'RN101', 'ViT-B/32', 'ViT-B/16', 'ViT-L/14', 'ViT-L/14@336px'],
                         dest='clip_model_type', required=('clip' in sys.argv))
-    parser.add_argument('--inputs', nargs='+', type=str, choices=['question', 'image'], required=True)
-    parser.add_argument('--vocab', type=argparse.FileType('r'), required=True)
+    parser.add_argument('--train-features', type=pathlib.Path, required=True, dest='train_features')
+    parser.add_argument('--val-features', type=pathlib.Path, required=True, dest='val_features')
     parser.add_argument('--vocab-features', type=pathlib.Path, required=('contrastive' in sys.argv), dest='vocab_features')
-    parser.add_argument('--log-dir', type=pathlib.Path, dest='log_dir', required=True)
+    #
+    parser.add_argument('--objective', type=str, choices=['classifier', 'contrastive'], required=True)
+    parser.add_argument('--inputs', nargs='+', type=str, choices=['question', 'image'], required=True)
     # Defaults
     parser.add_argument('--bs', type=int, default=128, dest='batch_size')
     parser.add_argument('--lr', type=float, default=0.01)
