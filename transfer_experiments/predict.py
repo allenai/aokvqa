@@ -21,16 +21,19 @@ parser.add_argument('--features', type=pathlib.Path, required=True)
 parser.add_argument('--out', type=argparse.FileType('w'), dest='output_file')
 #
 parser_weights = parser.add_mutually_exclusive_group(required=True)
+
 parser_weights.add_argument('--ckpt', type=pathlib.Path, dest='checkpoint_path')
+
 parser_weights.add_argument('--zero-shot', action='store_true', dest='clip_zero_shot')
 parser.add_argument('--inputs', nargs='+', type=str, choices=['question', 'image'], required=('--zero-shot' in sys.argv))
 #
 parser.add_argument('--vocab', type=argparse.FileType('r'))
 parser.add_argument('--vocab-features', type=pathlib.Path, dest='vocab_features')
 parser.add_argument('--mc', action='store_true', dest='multiple_choice')
+
 parser.add_argument('--clip-model-type', type=str,
                     choices=['RN50', 'RN50x4', 'RN50x16', 'RN50x64', 'RN101', 'ViT-B/32', 'ViT-B/16', 'ViT-L/14', 'ViT-L/14@336px'],
-                    dest='clip_model_type', required=('--zero-shot' in sys.argv and '--vocab' in sys.argv))
+                    dest='clip_model_type', required=('--zero-shot' in sys.argv and '--mc' in sys.argv))
 #
 args = parser.parse_args()
 
@@ -39,7 +42,7 @@ args = parser.parse_args()
 
 aokvqa_set = load_aokvqa(args.aokvqa_dir, args.split)
 
-## Load models and features
+## Load models
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -51,19 +54,27 @@ elif args.clip_zero_shot:
     classifier = nn.Identity().to(device)
     hp = AttributeDict(backbone='clip', clip_model_type=args.clip_model_type, objective='zero-shot', inputs=args.inputs)
 
-vocab = args.vocab.read().splitlines()
-if hp.objective in ['contrastive', 'zero-shot']:
-    clip_model = clip.load(hp.clip_model_type, device=device)[0]
-    logit_scale = clip_model.logit_scale.exp().cpu()
-    if args.multiple_choice is False:
-        vocab_features = torch.load(args.vocab_features).cpu()
-        vocab_features /= vocab_features.norm(dim=-1, keepdim=True)
+# Load input features
 
 embeddings = torch.load(args.features)
 if hp.backbone == 'clip':
     for q in embeddings.keys():
         embeddings[q]['question'] = embeddings[q]['question'] / embeddings[q]['question'].norm(dim=-1, keepdim=True)
         embeddings[q]['image'] = embeddings[q]['image'] / embeddings[q]['image'].norm(dim=-1, keepdim=True)
+
+# Load vocab, vocab features, clip
+
+if (hp.objective == 'classifier') or \
+   (hp.objective in ['contrastive', 'zero-shot'] and args.multiple_choice is False):
+        vocab = args.vocab.read().splitlines()
+
+if hp.objective in ['contrastive', 'zero-shot']:
+    if args.multiple_choice is False:
+        vocab_features = torch.load(args.vocab_features).cpu()
+        vocab_features /= vocab_features.norm(dim=-1, keepdim=True)
+    else:
+        clip_model = clip.load(hp.clip_model_type, device=device)[0]
+        logit_scale = clip_model.logit_scale.exp().cpu()
 
 ## Prediction loop
 
@@ -87,7 +98,7 @@ with torch.no_grad():
         e = e.unsqueeze(0).to(device)
         x = classifier(e)[0].cpu()
 
-        # Predict from vocab
+        # Predict
         if hp.objective in ['contrastive', 'zero-shot']:
             if args.multiple_choice:
                 vocab = o['choices']
