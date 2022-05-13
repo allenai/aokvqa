@@ -1,7 +1,7 @@
 
 ## ClipCap
 
-We have modified the [ClipCap](https://github.com/rmokady/CLIP_prefix_caption) codebase for our task of VQA. In particular, we have forked the original repo via [our ClipCap branch](https://github.com/allenai/aokvqa/tree/ClipCap) and [made additional changes](https://github.com/allenai/aokvqa/compare/1ad805a...ClipCap). This is already part of the codebase you cloned, assuming you included `--recurse-submodules` as directed above.
+We have modified the [ClipCap](https://github.com/rmokady/CLIP_prefix_caption) codebase for our task of VQA. In particular, we have forked the original repo via [our ClipCap branch](https://github.com/allenai/aokvqa/tree/ClipCap) and [made additional changes](https://github.com/allenai/aokvqa/compare/1ad805a...ClipCap). This is already part of the codebase you cloned, assuming you included `--recurse-submodules` as directed in the [main branch README](https://github.com/allenai/aokvqa/blob/main/README.md).
 
 <details> <summary><b>Downloading pretrained models</b></summary>
 
