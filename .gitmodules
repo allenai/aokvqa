@@ -1,4 +1,4 @@
 [submodule "ClipCap"]
 	path = ClipCap
-	url = git@github.com:allenai/aokvqa.git
+	url = https://github.com/allenai/aokvqa.git
 	branch = ClipCap

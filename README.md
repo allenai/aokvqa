@@ -32,7 +32,7 @@ The Visual Question Answering (VQA) task aspires to provide a meaningful testbed
 ## Getting started
 
 ```bash
-git clone --single-branch --recurse-submodules git@github.com:allenai/aokvqa.git
+git clone --single-branch --recurse-submodules https://github.com/allenai/aokvqa.git
 
 cd aokvqa
 export PYTHONPATH=.
