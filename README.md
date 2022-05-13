@@ -47,8 +47,7 @@ conda activate aokvqa
 export AOKVQA_DIR=./datasets/aokvqa/
 mkdir -p ${AOKVQA_DIR}
 
-curl https://prior-datasets.s3.us-east-2.amazonaws.com/aokvqa/aokvqa_v1p0.zip
-unzip aokvqa_v1p0.zip -d ${AOKVQA_DIR}; rm aokvqa_v1p0.zip
+curl -L -s https://prior-datasets.s3.us-east-2.amazonaws.com/aokvqa/aokvqa_v1p0.tar.gz | tar xvz -C ${AOKVQA_DIR}
 ```
 
 <details> <summary><b>Downloading images/annotations from COCO 2017</b></summary>
@@ -110,20 +109,20 @@ print(dataset_example['rationales'][0])
 
 ## Evaluation
 
-Please prepare a `predictions.json` file for each evaluation split (val and test, for both MC and DA) with the format: `{ question_id (str) : prediction (str) }`. Be sure this includes a prediction for **every** question in the evaluation set. You won't be able to run evaluation locally on test set predictions, since the ground-truth answers are hidden.
+Please prepare a `predictions_{split}-{setting}.json` file for each evaluation set (val and test splits, for both MC and DA settings) with the format: `{ question_id (str) : prediction (str) }`. Be sure this includes a prediction for **every** question in the evaluation set. You won't be able to run evaluation locally on test set predictions, since the ground-truth answers are hidden.
 
 ```python
 import os
 import json
 import aokvqa_utils
 
-multiple_choice = True  # Set False for DA
-predictions_file = './path/to/predictions.json'
-predictions = json.load(open(predictions_file, 'r'))
-
 aokvqa_dir = os.getenv('AOKVQA_DIR')
 split = 'val'
+multiple_choice = True  # Set False for DA
+predictions_file = './path/to/predictions_val-mc.json'
+
 eval_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, split)
+predictions = json.load(open(predictions_file, 'r'))
 
 acc = aokvqa_utils.eval_aokvqa(eval_dataset, predictions, multiple_choice=multiple_choice)
 print(acc) # float
@@ -185,8 +184,21 @@ done
 ```bash
 export LOG_DIR=./logs/
 export PREDS_DIR=./predictions/
-mkdir -p ${LOG_DIR} ${PREDS_DIR}
+export PT_MODEL_DIR=./pretrained_models/
+mkdir -p ${LOG_DIR} ${PREDS_DIR} ${PT_MODEL_DIR}
 ```
+
+<details> <summary><b>Download our pretrained model weights</b></summary>
+
+```bash
+# Checkpoints for transfer learning experiments
+curl -L -s https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/transfer_exp_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
+
+# Checkpoints for ClipCap models (generating answers and rationales)
+curl -L -s https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/clipcap_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
+```
+
+</details>
 
 Below, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples, we produce predictions on the validation set below.
 
@@ -266,9 +278,6 @@ We have modified the [ClipCap](https://github.com/rmokady/CLIP_prefix_caption) c
 <details> <summary><b>Downloading pretrained models</b></summary>
 
 ```bash
-export PT_MODEL_DIR=./pretrained_models/
-mkdir -p ${PT_MODEL_DIR}
-
 # We use this model: MLP mapping network and finetuned GPT-2 (pretrained on COCO)
 gdown 1IdaBtMSvtyzF0ByVaBHtvM0JYSXRExRX -O ${PT_MODEL_DIR}/clipcap_coco_weights.pt
 ```
