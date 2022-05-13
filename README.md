@@ -258,7 +258,7 @@ python transfer_experiments/predict.py --aokvqa-dir ${AOKVQA_DIR} --out ${PREDS_
 
 #### Querying GPT-3
 
-To follow our experiments which use GPT-3, you. Please retrieve your [organization](https://beta.openai.com/account/org-settings) and [API](https://beta.openai.com/account/api-keys) keys and set them in your environment variables.
+To follow our experiments which use GPT-3, you must have access to the [OpenAI API](https://openai.com/api/) (at cost). Please retrieve your [organization](https://beta.openai.com/account/org-settings) and [API](https://beta.openai.com/account/api-keys) keys and set them in your environment variables.
 
 ```bash
 export OPENAI_ORG=....
