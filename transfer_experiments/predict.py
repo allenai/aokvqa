@@ -7,10 +7,9 @@ import json
 
 import torch
 import torch.nn as nn
-import clip
 
 # https://github.com/PyTorchLightning/pytorch-lightning/issues/11663
-import sentencepiece; from pytorch_lightning.utilities import AttributeDict
+import sentencepiece; import pytorch_lightning as pl; import clip
 
 from transfer_experiments.train import LinearClassifier
 from aokvqa_utils import load_aokvqa, map_to_choices
@@ -54,7 +53,7 @@ if args.checkpoint_path is not None:
     hp = classifier.hparams
 elif args.clip_zero_shot:
     classifier = nn.Identity().to(device)
-    hp = AttributeDict(backbone='clip', clip_model_type=args.clip_model_type, objective='zero-shot', inputs=args.inputs)
+    hp = pl.utilities.AttributeDict(backbone='clip', clip_model_type=args.clip_model_type, objective='zero-shot', inputs=args.inputs)
 
 # Load input features
 
