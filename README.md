@@ -194,5 +194,5 @@ For each experiment, we follow this prediction file naming scheme: `{model-name}
 - [Heuristics](./heuristics/README.md)
 - [Transfer Learning Experiments](./transfer_experiments/README.md)
 - [Querying GPT-3](./gpt3/README.md)
-- [ClipCap](./ClipCap/README.md)
-- [Generating Captions & Rationales](./ClipCap/README.md)
+- [ClipCap](https://github.com/allenai/aokvqa/blob/ClipCap/README.md)
+- [Generating Captions & Rationales](https://github.com/allenai/aokvqa/blob/ClipCap/README.md)
