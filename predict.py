@@ -9,7 +9,8 @@ import pathlib
 import torch
 import torch.nn.functional as F
 
-from aokvqa_utils import load_aokvqa, map_to_choices
+from load_aokvqa import load_aokvqa
+from evaluation.remap_predictions import map_to_choices
 from ClipCap.data import prompt_text, load_data
 from ClipCap.train import load_config, load_model
 

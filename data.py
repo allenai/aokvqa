@@ -7,7 +7,7 @@ import random
 import torch
 from transformers import GPT2Tokenizer
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 from ClipCap.train_clipcap import ClipCocoDataset
 
 
