@@ -101,24 +101,26 @@ print(dataset_example['rationales'][0])
 
 ## Evaluation
 
-Please prepare `predictions_{split}-{setting}.json` files (for `split: {val,test}` and `setting: {mc,da}`) in the format `{ question_id (str) : prediction (str) }`.
+Please prepare `predictions_{split}.json` files (for `split: {val,test}`) in the format below. You may omit either `multiple_choice` or `direct_answer` field if you only want to evaluate one setting.
 
-See the following example command for evaluation. Exclude `--multiple-choice` for the DA setting. You won't be able to run evaluation for the (private) test set locally.
+```python
+{
+    '<question_id>' : {
+        'multiple_choice' : '<prediction>',
+        'direct_answer' : '<prediction>'
+    }
+}
+```
+
+You can run evaluation on the validation set as follows.
 
 ```bash
-python evaluation/eval_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --preds ./predictions_val-mc.json --multiple-choice
+python evaluation/eval_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --preds ./predictions_val.json
 ```
 
 ### Leaderboard
 
-First, unify predictions for each split as follows. You can omit either `--mc` or `--da` prediction file if you only want to evaluate one setting.
-
-```bash
-python evaluation/prepare_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --mc ./predictions_val-mc.json --da ./predictions_val-da.json --out ./predictions_val.json
-# repeat for test split ...
-```
-
-Then, submit `predictions_val.json` and/or `predictions_test.json` to the [leaderboard](https://leaderboard.allenai.org/aokvqa).
+You may submit your predictions files (`predictions_val.json`, `predictions_test.json`) to the [leaderboard](https://leaderboard.allenai.org/aokvqa).
 
 ## Codebase
 
@@ -189,10 +191,18 @@ curl -fsSL https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/clipcap
 We have included instructions for replicating each of our experiments (see README.md files below).
 
 All Python scripts should be run from the root of this repository. Please be sure to first run the installation and data preparation as directed above.
-For each experiment, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples in these Readme files, we produce predictions on the validation set.
 
 - [Heuristics](./heuristics/README.md)
 - [Transfer Learning Experiments](./transfer_experiments/README.md)
 - [Querying GPT-3](./gpt3/README.md)
 - [ClipCap](https://github.com/allenai/aokvqa/blob/ClipCap/README.md)
 - [Generating Captions & Rationales](https://github.com/allenai/aokvqa/blob/ClipCap/README.md)
+
+For each experiment, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples in these Readme files, we produce predictions on the validation set.
+
+We unify predictions for each split before evaluation. (You can omit one of `--mc` or `--da` prediction file if you only want to evaluate one setting.)
+
+```bash
+python evaluation/prepare_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --mc ./predictions_val-mc.json --da ./predictions_val-da.json --out ./predictions_val.json
+# repeat for test split ...
+```

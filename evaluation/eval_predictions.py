@@ -55,7 +55,6 @@ if __name__ == '__main__':
     parser.add_argument('--aokvqa-dir', type=pathlib.Path, required=True, dest='aokvqa_dir')
     parser.add_argument('--split', type=str, choices=['train', 'val', 'test_w_ans'], required=True)
     parser.add_argument('--preds', type=str, required=True, dest='prediction_files')
-    parser.add_argument('--multiple-choice', action='store_true', dest='multiple_choice')
     args = parser.parse_args()
 
     dataset = load_aokvqa(args.aokvqa_dir, args.split)
@@ -63,11 +62,36 @@ if __name__ == '__main__':
     for prediction_file in glob.glob(args.prediction_files):
         predictions = json.load(open(prediction_file, 'r'))
 
-        acc = eval_aokvqa(
-            dataset,
-            predictions,
-            multiple_choice=args.multiple_choice,
-            ensure_valid_choice=False
-        )
+        # Multiple choice
 
-        print(prediction_file, acc)
+        mc_predictions = {}
+
+        for q in predictions.keys():
+            if 'multiple_choice' in predictions[q].keys():
+                mc_predictions[q] = predictions[q]['multiple_choice']
+
+        if mc_predictions != {}:
+            mc_acc = eval_aokvqa(
+                dataset,
+                mc_predictions,
+                multiple_choice=True,
+                strict=False
+            )
+            print(prediction_file, 'MC', mc_acc)
+
+        # Direct Answer
+
+        da_predictions = {}
+
+        for q in predictions.keys():
+            if 'direct_answer' in predictions[q].keys():
+                da_predictions[q] = predictions[q]['direct_answer']
+
+        if da_predictions != {}:
+            da_acc = eval_aokvqa(
+                dataset,
+                da_predictions,
+                multiple_choice=False,
+                strict=False
+            )
+            print(prediction_file, 'DA', da_acc)
