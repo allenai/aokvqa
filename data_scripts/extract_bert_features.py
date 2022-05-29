@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch
 from transformers import AutoTokenizer, AutoModel
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 
 
 parser = argparse.ArgumentParser()

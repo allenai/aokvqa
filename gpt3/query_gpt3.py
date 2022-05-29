@@ -9,7 +9,7 @@ import openai
 openai.organization = os.getenv('OPENAI_ORG')
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 
 
 random.seed(0)

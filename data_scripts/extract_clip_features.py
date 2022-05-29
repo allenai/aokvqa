@@ -7,7 +7,7 @@ import pathlib
 import torch
 import clip
 
-from aokvqa_utils import load_aokvqa, get_coco_path
+from load_aokvqa import load_aokvqa, get_coco_path
 
 
 parser = argparse.ArgumentParser()

@@ -15,7 +15,7 @@ import sentencepiece; import pytorch_lightning as pl
 
 import torchmetrics.functional as MF
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 
 
 def main():

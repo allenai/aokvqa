@@ -12,7 +12,8 @@ import torch.nn as nn
 import sentencepiece; import pytorch_lightning as pl; import clip
 
 from transfer_experiments.train import LinearClassifier
-from aokvqa_utils import load_aokvqa, map_to_choices
+from load_aokvqa import load_aokvqa
+from evaluation.remap_predictions import map_to_choices
 
 
 parser = argparse.ArgumentParser()

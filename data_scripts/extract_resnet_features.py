@@ -9,7 +9,7 @@ import torch.nn as nn
 from torchvision import models
 from torchvision import transforms as T
 
-from aokvqa_utils import load_aokvqa, get_coco_path
+from load_aokvqa import load_aokvqa, get_coco_path
 
 
 parser = argparse.ArgumentParser()

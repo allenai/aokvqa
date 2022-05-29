@@ -3,7 +3,7 @@ import json
 import argparse
 import pathlib
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 
 
 parser = argparse.ArgumentParser()

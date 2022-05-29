@@ -5,7 +5,7 @@ import argparse
 import pathlib
 from collections import Counter
 
-from aokvqa_utils import load_aokvqa
+from load_aokvqa import load_aokvqa
 
 
 parser = argparse.ArgumentParser()

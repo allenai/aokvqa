@@ -42,10 +42,10 @@ conda activate aokvqa
 export AOKVQA_DIR=./datasets/aokvqa/
 mkdir -p ${AOKVQA_DIR}
 
-curl -L -s https://prior-datasets.s3.us-east-2.amazonaws.com/aokvqa/aokvqa_v1p0.tar.gz | tar xvz -C ${AOKVQA_DIR}
+curl -fsSL https://prior-datasets.s3.us-east-2.amazonaws.com/aokvqa/aokvqa_v1p0.tar.gz | tar xvz -C ${AOKVQA_DIR}
 ```
 
-<details> <summary><b>Downloading images/annotations from COCO 2017</b></summary>
+<details> <summary><b>Downloading COCO 2017</b></summary>
 
 ```bash
 export COCO_DIR=./datasets/coco/
@@ -62,17 +62,14 @@ unzip annotations_trainval2017.zip -d ${COCO_DIR}; rm annotations_trainval2017.z
 
 </details>
 
-Loading our dataset is easy! Just grab our [aokvqa_utils.py](https://github.com/allenai/aokvqa/blob/main/aokvqa_utils.py) file and refer to the following code.
+Loading our dataset is easy! Just grab our [load_aokvqa.py](https://github.com/allenai/aokvqa/blob/main/load_aokvqa.py) file and refer to the following code.
 
 ```python
 import os
-import aokvqa_utils
-
 aokvqa_dir = os.getenv('AOKVQA_DIR')
 
-train_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'train')
-val_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'val')
-test_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, 'test')
+from load_aokvqa import load_aokvqa, get_coco_path
+train_dataset = load_aokvqa(aokvqa_dir, 'train')  # also 'val' or 'test'
 ```
 
 <details> <summary><b>Example dataset entry</b></summary>
@@ -84,7 +81,7 @@ print(dataset_example['question_id'])
 # 22MexNkBPpdZGX6sxbxVBH
 
 coco_dir = os.getenv('COCO_DIR')
-image_path = aokvqa_utils.get_coco_path('train', dataset_example['image_id'], coco_dir)
+image_path = get_coco_path('train', dataset_example['image_id'], coco_dir)
 print(image_path)
 # ./datasets/coco/train2017/000000299207.jpg
 
@@ -104,30 +101,24 @@ print(dataset_example['rationales'][0])
 
 ## Evaluation
 
-Please prepare a `predictions_{split}-{setting}.json` file for each evaluation set (val and test splits, for both MC and DA settings) with the format: `{ question_id (str) : prediction (str) }`. Be sure this includes a prediction for **every** question in the evaluation set. You won't be able to run evaluation locally on test set predictions, since the ground-truth answers are hidden.
+Please prepare `predictions_{split}-{setting}.json` files (for `split: {val,test}` and `setting: {mc,da}`) in the format `{ question_id (str) : prediction (str) }`.
 
-```python
-import os
-import json
-import aokvqa_utils
+See the following example command for evaluation. Exclude `--multiple-choice` for the DA setting. You won't be able to run evaluation for the (private) test set locally.
 
-aokvqa_dir = os.getenv('AOKVQA_DIR')
-split = 'val'
-multiple_choice = True  # Set False for DA
-predictions_file = './path/to/predictions_val-mc.json'
-
-eval_dataset = aokvqa_utils.load_aokvqa(aokvqa_dir, split)
-predictions = json.load(open(predictions_file, 'r'))
-
-acc = aokvqa_utils.eval_aokvqa(eval_dataset, predictions, multiple_choice=multiple_choice)
-print(acc) # float
+```bash
+python evaluation/eval_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --preds ./predictions_val-mc.json --multiple-choice
 ```
-
-To compute metrics over a batch of predictions files (e.g. `./predictions/{model-name}_val-da.json`), you can instead run `python evaluate_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --preds "./predictions/*_val-da.json"`. Add the `--multiple-choice` flag to run MC evaluation over (e.g. `*_val-mc.json`) files that have instead been generated for the multiple-choice setting.
 
 ### Leaderboard
 
-You can submit predictions from your model to our leaderboard! Simply produce predictions files for each split and setting and [submit here](https://leaderboard.allenai.org/aokvqa). Remember that your model is not allowed to compare "choices" when predicting for the DA setting.
+First, unify predictions for each split as follows. You can omit either `--mc` or `--da` prediction file if you only want to evaluate one setting.
+
+```bash
+python evaluation/prepare_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --mc ./predictions_val-mc.json --da ./predictions_val-da.json --out ./predictions_val.json
+# repeat for test split ...
+```
+
+Then, submit `predictions_val.json` and/or `predictions_test.json` to the [leaderboard](https://leaderboard.allenai.org/aokvqa).
 
 ## Codebase
 
@@ -187,19 +178,21 @@ mkdir -p ${LOG_DIR} ${PREDS_DIR} ${PT_MODEL_DIR}
 
 ```bash
 # Checkpoints for transfer learning experiments
-curl -L -s https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/transfer_exp_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
+curl -fsSL https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/transfer_exp_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
 
 # Checkpoints for ClipCap models (generating answers and rationales)
-curl -L -s https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/clipcap_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
+curl -fsSL https://prior-model-weights.s3.us-east-2.amazonaws.com/aokvqa/clipcap_checkpoints.tar.gz | tar xvz -C ${PT_MODEL_DIR}/aokvqa_models
 ```
 
 </details>
 
-We have included instructions for replicating each of our experiments. Please refer to the README.md files for:
+We have included instructions for replicating each of our experiments (see README.md files below).
+
+All Python scripts should be run from the root of this repository. Please be sure to first run the installation and data preparation as directed above.
+For each experiment, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples in these Readme files, we produce predictions on the validation set.
+
 - [Heuristics](./heuristics/README.md)
 - [Transfer Learning Experiments](./transfer_experiments/README.md)
 - [Querying GPT-3](./gpt3/README.md)
 - [ClipCap](./ClipCap/README.md)
 - [Generating Captions & Rationales](./ClipCap/README.md)
-
-All Python scripts should be run from the root of this repository. Please be sure to first run the installation and data preparation as directed above. For each, we follow this prediction file naming scheme: `{model-name}_{split}-{setting}.json` (e.g. `random-weighted_val-mc.json` or `random-weighted_test-da.json`). As examples in these Readme files, we produce predictions on the validation set.
