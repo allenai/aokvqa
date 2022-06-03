@@ -2,7 +2,7 @@
 
 Official repository for **A-OKVQA: A Benchmark for Visual Question Answering using World Knowledge**.
 
-Links: [[Paper]]() [[Website]](https://a-okvqa.allenai.org) [[Leaderboard]](https://leaderboard.allenai.org/a-okvqa)
+Links: [[Paper]]() [[Website]](http://a-okvqa.allenai.org) [[Leaderboard]](https://leaderboard.allenai.org/a-okvqa/submissions/public)
 
 ### Abstract
 
@@ -119,7 +119,7 @@ python evaluation/eval_predictions.py --aokvqa-dir ${AOKVQA_DIR} --split val --p
 
 ### Leaderboard
 
-You may submit `predictions_test.json` to the [leaderboard](https://leaderboard.allenai.org/a-okvqa).
+You may submit `predictions_test.json` to the [leaderboard](https://leaderboard.allenai.org/a-okvqa/submissions/get-started).
 
 ## Codebase
 
