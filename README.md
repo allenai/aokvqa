@@ -2,7 +2,7 @@
 
 Official repository for **A-OKVQA: A Benchmark for Visual Question Answering using World Knowledge**.
 
-Links: [[Paper]](https://arxiv.org/abs/2206.01718) [[Website]](http://a-okvqa.allenai.org) [[Leaderboard]](https://leaderboard.allenai.org/a-okvqa/submissions/public)
+Links: [[Paper]](https://www.ecva.net/papers/eccv_2022/papers_ECCV/papers/136680141.pdf) [[Website]](http://a-okvqa.allenai.org) [[Leaderboard]](https://leaderboard.allenai.org/a-okvqa/submissions/public)
 
 ### Abstract
 
